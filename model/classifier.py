@@ -288,7 +288,7 @@ class CHDClassifier:
         for col in numeric_cols:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-        #  BELANGRIJK: eerst kolommen selecteren
+        # eerst kolommen selecteren
         df = df[self.columns]
 
         # Daarna pas median() doen
