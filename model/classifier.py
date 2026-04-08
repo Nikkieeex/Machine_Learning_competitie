@@ -14,6 +14,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import calibration_curve
 from sklearn.svm import LinearSVC
+from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 class CHDClassifier:
     def __init__(self):
@@ -111,17 +113,32 @@ class CHDClassifier:
             ))
         ])
 
+        bb = Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", BaggingClassifier(
+                estimator=DecisionTreeClassifier(
+                    max_depth=5,
+                    class_weight="balanced"
+                ),
+                n_estimators=200,
+                bootstrap=True,
+                random_state=42
+            ))
+        ])
+
         rf.fit(X_train, y_train)
         et.fit(X_train, y_train)
         gb.fit(X_train, y_train)
         lr.fit(X_train, y_train)
         svm.fit(X_train, y_train)
+        bb.fit(X_train, y_train)
 
         rf_acc = accuracy_score(y_test, rf.predict(X_test))
         et_acc = accuracy_score(y_test, et.predict(X_test))
         gb_acc = accuracy_score(y_test, gb.predict(X_test))
         lr_acc = accuracy_score(y_test,lr.predict(X_test))
         svm_acc = accuracy_score(y_test, svm.predict(X_test))
+        bb_acc = accuracy_score(y_test, bb.predict(X_test))
 
         # Kies beste model
         best_model = rf
@@ -143,6 +160,10 @@ class CHDClassifier:
             best_model = svm
             best_acc = svm_acc
 
+        if bb_acc > best_acc:
+            best_model = bb
+            best_acc = bb_acc
+
         self.model = best_model
 
         # Maak één PDF voor alle evaluaties
@@ -151,10 +172,10 @@ class CHDClassifier:
             fig = plt.figure(figsize=(8, 4))
             plt.title("Modelvergelijking (Accuracy)")
 
-            models = ["RandomForest", "ExtraTrees", "GradientBoosting", "LogisticRegression", "LinearSVC"]
-            scores = [rf_acc, et_acc, gb_acc, lr_acc, svm_acc]
+            models = ["RandomForest", "ExtraTrees", "GradientBoosting", "LogisticRegression", "LinearSVC", "Balanced Bagging"]
+            scores = [rf_acc, et_acc, gb_acc, lr_acc, svm_acc, bb_acc]
 
-            plt.bar(models, scores, color=["#4c72b0", "#55a868", "#c44e52", "#8172b3", "#ccb974"])
+            plt.bar(models, scores, color=["#4c72b0", "#55a868", "#c44e52", "#8172b3", "#ccb974", "#CCB902"])
             plt.ylabel("Accuracy")
             plt.ylim(0, 1)
 
@@ -171,28 +192,32 @@ class CHDClassifier:
             gb_pred = gb.predict(X_test)
             lr_pred = lr.predict(X_test)
             svm_pred = svm.predict(X_test)
+            bb_pred = bb.predict(X_test)
 
-            model_names = ["RandomForest", "ExtraTrees", "GradientBoosting", "LogisticRegression", "LinearSVC"]
+            model_names = ["RandomForest", "ExtraTrees", "GradientBoosting", "LogisticRegression", "LinearSVC", "Balanced Bagging"]
             precisions = [
                 precision_score(y_test, rf_pred),
                 precision_score(y_test, et_pred),
                 precision_score(y_test, gb_pred),
                 precision_score(y_test, lr_pred),
-                precision_score(y_test, svm_pred)
+                precision_score(y_test, svm_pred),
+                precision_score(y_test, bb_pred)
             ]
             recalls = [
                 recall_score(y_test, rf_pred),
                 recall_score(y_test, et_pred),
                 recall_score(y_test, gb_pred),
                 recall_score(y_test, lr_pred),
-                recall_score(y_test, svm_pred)
+                recall_score(y_test, svm_pred),
+                recall_score(y_test, bb_pred)
             ]
             f1s = [
                 f1_score(y_test, rf_pred),
                 f1_score(y_test, et_pred),
                 f1_score(y_test, gb_pred),
                 f1_score(y_test, lr_pred),
-                f1_score(y_test, svm_pred)
+                f1_score(y_test, svm_pred),
+                f1_score(y_test, bb_pred)
             ]
 
             # Maak een tabelpagina
